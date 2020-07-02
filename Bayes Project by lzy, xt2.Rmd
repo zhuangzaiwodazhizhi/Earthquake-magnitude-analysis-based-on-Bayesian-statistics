@@ -1,87 +1,485 @@
 ---
 title: "Earthquake Magnitude Analysis Based on Bayesian statistics"
-author:
-  - Zhengyu Li (10175000225)
-  - Tong Xu (1016500223)
-date: "2020/05/30"
-output: 
-  pdf_document:
-    toc: true
-    fig_crop: false
+author: |
+    | Zhengyu Li(10175000225)
+    | Tong Xu (10165000223)
+#date: "`r format(Sys.time(), '%B %d, %Y')`"
+documentclass: ctexart
+fontsize: 12pt
+geometry: tmargin=1.8cm, bmargin=1.8cm, lmargin=2.1cm, rmargin=2.1cm
+output:
+#  pdf_document:  
+  rticles::ctex:
     keep_tex: true
-    number_sections: true
+    fig_caption: yes
+    number_sections: yes
+    toc: yes
+    latex_engine: xelatex
+classoption: "hyperref,"
+header-includes: 
+  - \usepackage{fontspec, xunicode, xltxtra}    
+  - \usepackage{xeCJK,ctex}
+  - \usepackage{bm,xcolor}
+  - \usepackage{fancyhdr}
+  
+  - \pagestyle{fancy}
+  - \fancyhead[L]{Bayesian Statistics Case}
+  - \fancyfoot[R]{\thepage}
+  - \fancyfoot[C]{School of Statistics, East China Normal University}  
+# 设置页眉线与页脚线宽度与颜色
+  - \renewcommand{\headrule}{{\color{red}\hrule width\headwidth height\headrulewidth \vskip-\headrulewidth}}
+  - \renewcommand{\footrule}{{\color{black}\vskip-\footruleskip\vskip-\footrulewidth \hrule width\headwidth height\footrulewidth\vskip\footruleskip}}
+  - \renewcommand{\headrulewidth}{0.8pt}
+  - \renewcommand{\footrulewidth}{0.6pt}
+  - \renewcommand\contentsname{\bfseries Contents}  
+# 定制章节标题格式 
+  - \usepackage[sf,raggedright]{titlesec}
+  - \usepackage{titletoc}
+  - \titleformat{\section}{\bfseries\large\color{blue}}{\bfseries\thesection}{0.5em}{}
+#  - \titleformat{\subsection}{\bfseries\large}{\bfseries\thesubsection}{0.5em}{}
+  - \titlespacing{\section}{0pt}{3.5ex plus .1ex minus .2ex}{1.5\wordsep}
+#  - \titlespacing{\subsection}{0pt}{1.5ex plus .1ex minus .2ex}{\wordsep}
+# hyperline
+  - \hypersetup{colorlinks=true, breaklinks=true, linkcolor=blue}
 ---
 
+
+\newpage
+
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(
+	echo = TRUE,
+	message = TRUE,
+	warning = TRUE
+)
 library(ggplot2)
 library(car)
 library(forecast)
+library(knitr)
+library(LearnBayes)
 ```
 
-\begin{abstract}
+\noindent\textbf{Abstract}:
 The text of your abstract.  150 -- 250 words.This is our abstract.This is our abstract.This is our abstract.This is our abstract.This is our abstract.This is our abstract.This is our abstract.This is our abstract.This is our abstract.This is our abstract.This is our abstract.This is our abstract.This is our abstract.This is our abstract.This is our abstract.This is our abstract.This is our abstract.This is our abstract.This is our abstract.This is our abstract.This is our abstract.This is our abstract.
-\end{abstract}
+
+\newpage
 
 # Introduction {#intro}
 
-Fiji ’s urban area needs to demolish an area of old houses and then rebuild.  Because the Fiji Islands are located on the boundary between the Pacific Plate and the Indian Plate, and are located on the Pacific Rim Volcanic Seismic Belt, the crustal plates collide, squeeze, and deform, making Fiji a country prone to earthquakes.Therefore, when designing a house, the government must simultaneously consider various factors such as budget and earthquake resistance level. Therefore, this article will conduct a statistical analysis of the earthquakes with a magnitude greater than 4.0 in Fiji since 1964. Find the characteristics of the earthquake in the area and provide a reference for the local government's architectural planning.
+Yibin, a beautiful city in Sichuan province, is the hometown of Zhengyu. There have been many earthquakes recently and a block near her house needs to be demolished and then rebuild.  Because faults are densely distributed in Sichuan, including three major fault zones-Longmenshan fault zone, Xianshuihe fault zone and Anninghe fault zone. Yibin is located on the fault zone, and the geographical movement has recently been active. Therefore, when designing a house, the government must simultaneously consider various factors such as budget and earthquake resistance level. Therefore, this article will conduct a statistical analysis of the earthquakes with a magnitude greater than 3.0 in Yibin since 2016. Find the characteristics of the earthquake in this area and find out what level of shock resistance is enough for Yibin.
 
 # Descriptive Statistical Analysis {#sec:1}
 
-We use one of the Harvard PRIM-H project data sets(Dr. John Woodhouse, Dept. of Geophysics, Harvard University). The dataset has 1000 observations on the following five numeric variables: 
+We use the data sets from National Earthquake Data Center. The dataset has 138 observations on the following three numeric variables: 
 
-$x_1 = lat$ means latitude of event.
+$x_1 = time$ : Accurate time of the earthquake.
 
-$x_2 = long$ means longitude.
+$x_2 = magnitude$ : Richter Magnitude, which magnitudes the earthquakes.
 
-$x_3 = depth$ means depth(km).
+$x_3 = depth$ : Depth of earthquake source. 
 
-$x_4 = mag$ means Richter Magnitude, which magnitudes the earthquakes.
-
-$x_5 = stations$ means the number of stations reporting. 
-
-Those events occurred in a cube near Fiji since 1964.
+The first part of the observations and the summary of the variables are shown below:
 
 ```{r}
-data <- quakes
-data <- data[,c("depth", "mag", "stations")]
-M <- read.csv("./quakes.csv")
-head(data)
-dim(data)[1]
-summary(data)
+Data <- read.csv("./earthquake.csv")
+data <- Data[,c(2,6,7)]
+head <- head(data)
+kable(head, align = 'c', caption = "The First Part of the Observations")
+C <- summary(data)
+table2 <- cbind(C[1:6., 1], C[1:6, 2], C[1:6, 3])
+kable(table2, col.names = c("time", "depth", "magnitude"),
+      caption = "Summary of the Dataset" )
+```
+
+We can find that the seismal depths(km) ranges from $2 km$ km to $18 km$ with median $9.5 km$ and mean $9.732 km$, the Richter Magnitudes ranges from $3.0$ to $6.0$ with median $3.3$ and mean $3.535$. Next, to make it more vividly, we depict these summary.
+
+```{r}
 plot(data)
-mag <- M$mag
+par(mfrow = c(1,2))
+depth <- data$depth
+hist(depth,15)
+mag <- data$magnitude
 hist(mag,15)
-par(mfrow = c(1,3))
+par(mfrow = c(1,2))
 boxplot(data$depth, main  = "The Boxplot of Depth(km)");
 boxplot(data$mag, main = "The Boxplot of Richer Magnitude");
-boxplot(data$stations, main = "The Boxplot of Stations Reporting Number")
+```
+
+The above pictures show that there isn't strong correlation between these variables. 
+
+From the descriptive analysis, we can not overemphasize the significance of Richter Magnitudes and it deserve further research. We will mainly analyze the Richter Magnitudes data in the follwing sections.   
+
+
+# How many earthquakes exceed 6 in magnitude
+
+Earthquakes with magnitude greater than 6.0 is strong earthquakes. As for effects: Damage to a moderate number of well-built structures in populated areas. Earthquake-resistant structures survive with slight to moderate damage. Poorly designed structures receive moderate to severe damage. Felt in wider areas; up to hundreds of miles/kilometers from the epicenter. Strong to violent shaking in epicentral area.
+
+So, firstly we want to find the proportion of earthquakes with magnitude greater than 6.0.
+
+We don't have much information about earthquake magnitudes, but we have a sense that probabilities for stronger earthquakes are small. So, we get the folling discrete prior:
+
+
+```{r}
+library(LearnBayes)
+p <- seq(0.001,0.05,0.004)
+prior <- c(15,10,5,5,4,3,2,1,1,0,0,0,0)
+prior <- prior / sum(prior)
+post <- pdisc(p, prior, c(sum(mag>=6),sum(mag<6.0)))
+result <- round(cbind(p, prior, post),3)
+kable(result)
+round(sum(p*post),5)
+```
+The posterior probabilities of proportion that earthquakes with magnitude greater than 6.0 are above. According to this results, we can inference that the proportion is $0.866\%$. 
+
+Since the proportion of earthquakes with magnitudes greater than 6 is very small, considering the high cost of houses with high earthquake resistance, we think that setting the earthquake resistance of buildings as 6 is totally enough. 
+
+Earthquakes with magnitudes between 5.0 to 6.0 are moderate earthquakes.This kind of earthquake can cause damage of varying severity to poorly constructed buildings. Zero to slight damage to all other buildings. Felt by everyone. As for light earthquakes(4.0-5.0) 	There would be noticeable shaking of indoor objects and rattling noises. They can be felt by most people in the affected area and slightly felt outside. Generally causes zero to minimal damage. Moderate to significant damage very unlikely. So, we will to do further research about the magnitude to give more specific suggestions.
+
+
+# Method Used in Constructing a Prior
+
+In this part, we analyze the Richter Magnitudes in seismic data via different methods such as noninformative prior and a conjugate joint prior.
+
+## Conventional Noninformative Prior
+
+In the initial stage, we are interested in the population $\mu$ of the magnitudes, but we do not really know the value of the population variace $\sigma^2$. Thus we also treat $\sigma^2$ as an unknown parameter. In the following sections, we will use multiparameter models to obtain the posterior marginal distribution of $\mu$ and $\sigma^2$.
+
+We consider $\mu$ and $\sigma^2$ are independent, thus the conventional noninformative prior is 
+
+$$
+\pi(\mu, \sigma^2) \propto \frac{1}{\sigma^2}, -\infty<\mu<\infty,0<\sigma^2<\infty
+$$
+```{r}
+n = length(mag)
+ybar = mean(mag)
+s2 = var(mag)
+round(n, 3); round(ybar, 3); round(s2, 3)
+```
+
+In the data set, the number of the observations $n = 138$, the sample mean $\bar{\mathbf{y}} = 3.53$ and the sample variance $s^2 = \frac{1}{n-1}\sum_{i = 1}^{n}(y_i - \bar{y})^2= 0.40$.
+
+The joint posterior density is 
+
+$$
+\pi(\mu, \sigma^2|\mathbf{y}) \propto \frac{1}{(\sigma^2)^{n/2 + 1}}e^{-\frac{1}{2\sigma^2}[(n-1)s^2 + n(\bar{y} - \mu)^2]}
+$$
+
+Then we use `normchi2post()` in the `LearnBayes` package to compute the logarithm of it.
+
+```{r}
+round(normchi2post(c(ybar, s2), mag), 3)
+```
+
+We also use `mycontour()` in `LearnBayes` package to draw the contour lines at $10%$, $1%$, and $0.1%$ of the maximum value of the posterior density.
+
+```{r eval=FALSE, include=FALSE}
+##################################??????????????????????
 ```
 
 
-# Method Used in the Data Analysis
+The sampling distribution is
+$$
+y_1, \dots , y_n \sim N(\mu, \sigma^2), i.i.d.
+$$
+The marginal posterior density of $\sigma^2$ is 
+$$
+\sigma^2|\mathbf{y} \sim IG(\frac{n-1}{2}, \frac{(n-1)s^2}{2})
+$$
+### Method 1: Analytic Formula
 
-## Noninformative Prior
+The marginal posterior density of $\mu$ is 
+$$
+\mu|\mathbf{y} \sim t_{n-1}(\mu, s^2/n) = t_{138}(3.53, 0.00289855)
+$$
+```{r}
+round(ybar + qt(c(0.025, 0.975), n - 1) * sqrt(s2/n), 3)
+```
 
-### Formula Analyzing
+The posterior mean $E(\mu|\mathbf{y}) = \bar{y} = 3.53$, and the $95%$ equal tail posterior credible interval of $\mu$ is [3.429, 3.641].
 
-### Direct Simulation
+***Compairison with frequentist analysis***. We then compare our bayesian model with frequentist analysis.
 
-### Indirect Simulation
+```{r}
+t.test(mag)
+```
+
+We find that the frequentist $95%$ percent confidence interval is also [3.429, 3.641], matching our previous analysis.
+
+### Method 2: Direct Simulation
+
+In this section, we will base on the direct simulation from the posterior distribution of $\mu$.
+
+```{r}
+# rt() generates random deviates
+post1.mu <- ybar + rt(10000, n-1) * sqrt(s2/n)
+mean(post1.mu)
+quantile(post1.mu, prob = c(0.025, 0.975))
+```
+
+The result is similar to the conclusion based on the analytic formula for the posterior distribution. 
+
+***The efficiency of direct simulation***. We can see the efficiency of direct simulation by imposing the posterior density of $\mu$ on the histogram of the posterior sample.
+
+```{r}
+hist(post1.mu, freq = F, cex.lab = 2, cex.axis = 1.5)
+rug(jitter(post1.mu))
+gt <- function(x){
+  dt((x - ybar)/sqrt(s2/n), n-1)/sqrt(s2/n)
+}
+curve(gt(x), add = T, col = "red")
+```
+
+
+### Method 3:Indirect Simulation
+
+In this section, we will base on the indirect simulation from the joint posterior distribution of both $\mu$ and $\sigma^2$. We fistly simulate $\sigma^2$, then simulate $\mu | \sigma^2$, and repeat the precess by `normpostsim()` in `LearnBayes` package.
+
+```{r eval=FALSE, include=FALSE}
+########## 
+d <- normpostsim(mag, n = 10000)
+mean(d$mu)
+quantile(d$mu, prob = c(.025, .975))
+```
+
+```{r eval=FALSE, include=FALSE}
+hist(post2.mu, freq = F, cex.lab = 2, cex.axis = 1.5)
+rug(jitter(post1.mu))
+gt <- function(x){
+  dt((x - ybar)/sqrt(s2/n), n-1)/sqrt(s2/n)
+}
+curve(gt(x), add = T, col = "red")
+```
+
+```{r eval=FALSE, include=FALSE}
+### mycontour
+```
+
+ 
 
 ## A Conjugate Joint Prior
 
+
 # MCMC Method
+
+## Brief Introduction
+
+Because of the shortcomings of other approaches we have done before,Markov chain Monte Carlo(MCMC) methods have become the predominant computational strategy for fitting Bayesian models. 
+
+MCMC uses Markov Chain to draw samples so that its limiting distribution is the joint distribution of interest. It also requires Monte Carlo integration over possibly high-dimensional integrand. The method is based on Gibbs sampling.
+
+## Construct the Normal Model
+
+Under the conventional noninformative prior:
+$$
+\pi(\mu, \sigma^2) \propto \frac{1}{\sigma^2}, -\infty<\mu<\infty,0<\sigma^2<\infty
+$$
+We can get:
+
+- The full conditional posterior distribution of $\mu$ given $\sigma^2$
+
+$$
+\mu|\sigma^2,\mathbf{y} \sim N(\bar{y}, \frac{\sigma^2}{2})
+$$
+- The conditional posterior distribution of $\sigma^2$ given $\mu$
+
+$$
+\sigma^{2} | \mu, \mathbf{y} \sim I G\left(\frac{n}{2}, \frac{1}{2} \sum_{i=1}^{n}\left(y_{i}-\mu\right)^{2}\right)
+$$
+That is,
+
+$$
+\frac{\sum_{i=1}^{n}\left(y_{i}-\mu\right)^{2}}{\sigma^{2}} \sim \chi_{n}^{2}
+$$
+With *Gibbs Sampling*, we have:
+
+```{r}
+library(LearnBayes)
+n <- length(mag)
+m <- 10000
+burn.in <- 1000
+sigma2 <- numeric(m)
+mu <- numeric(m)
+mu[1] <- mean(mag)
+
+for (i in 2:m) {
+sigma2[i] <- sum((mag - mu[i - 1])^2)/rchisq(1, n)
+mu[i] <- rnorm(1, mean = mean(mag), sd = sqrt(sigma2[i]/n))
+}
+mean(mu[burn.in:m])
+mean(sigma2[burn.in:m])
+quantile(mu[burn.in:m], prob = c(0.025, 0.975))
+mycontour(normchi2post, c(4.57, 4.67, 0.12, 0.22),
+mag, xlab="mean", ylab="variance",
+cex.lab=2,cex.axis=1.5)
+points(mu[burn.in:m], sigma2[burn.in:m])
+```
+
+We also find the mean and variance for the normal proposal log normal posterior density.
+
+When the posterior density of $(\mu, \lambda = log(\sigma^2))$ is given by 
+$$
+\pi(\mu, \lambda|\mathbf{y}) \propto L(\mu, e^{\lambda}),
+$$
+where $L(\mu, \sigma^2)$ is the likelihood function of $(\mu, \sigma^2)$ for the identical and independent normal sample.
+
+```{r}
+logpost <- function(theta, mag){  
+  mu <- theta[1]   
+  sigma <- exp(theta[2]/2)
+  sum(log(dnorm(mag, mu, sigma))) 
+  } 
+start = c(mean(mag), log(var(mag)))
+fit = laplace(logpost, start, mag) 
+
+# By Random Walk Metropolis Algorithm
+proposal = list(var = fit$var, scale = .5)
+fitrw = rwmetrop(logpost, proposal, start, 10000, mag)
+fitrw$accept
+post.means = apply(fitrw$par, 2, mean)
+mu <- fitrw$par[burn.in:m, 1]
+sigma2 <- exp(fitrw$par[burn.in:m, 2])
+quantile(mu, prob = c(.025, .975))
+
+# on (mu, log(sigma2)) cordinates
+mycontour(logpost, c(4.57, 4.67, log(.12),log(.22)), mag,
+          xlab="mean", ylab="log(variance)",
+          cex.lab=2,cex.axis=1.5) 
+points(mu, log(sigma2))
+
+# on (mu, sigma2) cordinates
+mycontour(normchi2post, c(4.57, 4.67, 0.12, 0.22),
+mag, xlab="mean", ylab="variance",
+cex.lab=2,cex.axis=1.5)
+points(mu, sigma2)
+```
 
 ## Noninformative Prior with MCMC
 
+
 ## Conjugate Joint Prior with MCMC
 
+
+
 # Hierarchical Model
+
+Hierarchical Model help me to draw inference about parameters associated with individual observations or groups of observations as well as about the parameters of the distributions from which the first-stage parameters are drawn.
+
+
+# Time series analysis
+
+Now we want to predict the number of earthquakes in the short futrue.
+
+So we made a table about the number of earthquakes in every month and season.
+
+```{r}
+t <- table(Data$year,Data$month)
+kable(t)
+month_quakes <- as.vector(t(t))
+season_quakes <- c()
+for (i in 1:18) {
+  j = 3*i
+  season_quakes[i] <- sum(month_quakes[(j-2):j])
+}
+
+```
+
+
+### Monthly number of earthquakes
+```{r fig.align='center', out.width='100%'}
+temp = data.frame(cbind(seq(1:length(month_quakes)),month_quakes))
+colnames(temp) = c("No.", "earthquakes_number")
+ggplot(data=temp, aes(x=No., y=earthquakes_number)) +
+  geom_line(color="#3078EA") +
+  theme_bw() + theme(legend.title=element_blank()) + 
+  stat_smooth(color="#3F5A93", method="loess") +
+  ylab("Number of earthquakes in the month") + xlab("#Month")
+```
+
+### Number of earthquakes per season
+```{r fig.align='center', out.width='100%'}
+temp = data.frame(cbind(seq(1:length(season_quakes)),season_quakes))
+colnames(temp) = c("No.", "earthquakes_number")
+ggplot(data=temp, aes(x=No., y=earthquakes_number)) +
+  geom_line(color="#3078EA") +
+  theme_bw() + theme(legend.title=element_blank()) + 
+  stat_smooth(color="#3F5A93", method="loess") +
+  ylab("Number of earthquakes in the month") + xlab("#Month")
+```
+
+Since the data is from 2016 to June of this year, there are only 18 seasons. It's not enough to make a great prediction. And a season is also too long to be meaningful for earthquake data. Therefore, we decide to use only monthly data in the following analysis.
+
+```{r}
+# ACF of month number of earthquakes
+bacf <- acf(month_quakes, plot = FALSE)
+bacfdf <- with(bacf, data.frame(lag, acf))
+ggplot(data = bacfdf, mapping = aes(x = lag, y = acf)) + xlab("Lag")+ ylab("ACF")+
+    geom_segment(mapping = aes(xend = lag, yend = 0),color="#3078EA",size=5,alpha=I(1/2)) +
+    geom_hline(aes(yintercept = 0.45), linetype = 2, color = 'darkblue')+
+    geom_hline(aes(yintercept = -0.45), linetype = 2, color = 'darkblue')+
+    geom_hline(aes(yintercept=0))
+```
+
+
+```{r}
+# PACF of month number of earthquakes
+bacf <- pacf(month_quakes, plot = FALSE)
+bacfdf <- with(bacf, data.frame(lag, acf))
+ggplot(data = bacfdf, mapping = aes(x = lag, y = acf)) + xlab("Lag")+ ylab("PACF")+
+    geom_segment(mapping = aes(xend = lag, yend = 0),color="#3078EA",size=5,alpha=I(1/2)) +
+    geom_hline(aes(yintercept = 0.43), linetype = 2, color = 'darkblue')+
+    geom_hline(aes(yintercept = -0.43), linetype = 2, color = 'darkblue')+
+    geom_hline(aes(yintercept=0))
+```
+According to the ACF plot and PACF plot. We set parameters of this model as ARIMMA(0,0,1).
+
+Other than ACF and PACF, we can also choose parameters by calculating AIC and BIC.The R package `forecast` offers an extremely handy function called `auto.arima`.It is able to fit various ARIMA models on the data, and then select the best model according to AIC, AICc or BIC value.
+
+```{r fig.align='center', out.width='100%'}
+### Fit the ARIMA model
+suppressMessages(library(forecast))
+arima.model <- auto.arima(month_quakes, approximation=FALSE, stepwise=FALSE)
+summary(arima.model)
+```
+
+Their reuslts are the same.
+
+```{r}
+meanARIMAForecast = forecast(arima.model, h=2);
+meanARIMAForecast$mean
+```
+
+
+### Plot actual versus predicted
+```{r fig.align='center', out.width='100%'}
+temp = data.frame(cbind(seq(1:62),c(month_quakes,forecast(arima.model, h=2)$mean)))
+colnames(temp) = c("No.", "earthquakes_number")
+ggplot(data=temp, aes(x=No., y=earthquakes_number)) +
+  geom_line(color="#3078EA") +
+  theme_bw() + theme(legend.title=element_blank()) + 
+  stat_smooth(color="#3F5A93", method="loess") +
+  ylab("Number of earthquakes in the month") + xlab("#Month")+
+  geom_vline(aes(xintercept = 60), linetype = 2, color = 'red')
+```
+
+Based on the model, we predict that there will be another one or two earthquakes in the next two months.
+
 
 # Results
 
 # Conclusion
 
+Our time series analysis of the frequency of earthquakes shows that in the next two months, there may be one or two earthquakes in Yibin area.
+
 # References
+1. M. K. Cowles, Applied Bayesian Statistics:  with R and OpenBUGS Examples, Springer, 2013.
+
+2. J. Albert, Bayesian Computation  with R (2nd Edtion), Springer, 2009.
+
+3. "Earthquake Facts and Statistics"[https://web.archive.org/web/20100524161817/http://earthquake.usgs.gov/earthquakes/eqarchives/year/eqstats.php]. United States Geological Survey. November 29, 2012. Archived from the original[https://www.usgs.gov/natural-hazards/earthquake-hazards/earthquakes] on May 24, 2010. Retrieved December 18, 2013.
+
+4. National Earthquake Data Center[http://data.earthquake.cn/gcywfl/index.html]
+# Appendix: R Code 
+
+
+
+
