@@ -129,6 +129,7 @@ result <- round(cbind(p, prior, post),3)
 kable(result)
 round(sum(p*post),5)
 ```
+
 The posterior probabilities of proportion that earthquakes with magnitude greater than 6.0 are above. According to this results, we can inference that the proportion is $0.866\%$. 
 
 Since the proportion of earthquakes with magnitudes greater than 6 is very small, considering the high cost of houses with high earthquake resistance, we think that setting the earthquake resistance of buildings as 6 is totally enough. 
@@ -185,6 +186,7 @@ The marginal posterior density of $\sigma^2$ is
 $$
 \sigma^2|\mathbf{y} \sim IG(\frac{n-1}{2}, \frac{(n-1)s^2}{2})
 $$
+
 ### Method 1: Analytic Formula
 
 The marginal posterior density of $\mu$ is 
@@ -308,7 +310,7 @@ mu[i] <- rnorm(1, mean = mean(mag), sd = sqrt(sigma2[i]/n))
 mean(mu[burn.in:m])
 mean(sigma2[burn.in:m])
 quantile(mu[burn.in:m], prob = c(0.025, 0.975))
-mycontour(normchi2post, c(4.57, 4.67, 0.12, 0.22),
+mycontour(normchi2post, c(3.0, 4.0, 0.2, 0.7),
 mag, xlab="mean", ylab="variance",
 cex.lab=2,cex.axis=1.5)
 points(mu[burn.in:m], sigma2[burn.in:m])
@@ -341,13 +343,13 @@ sigma2 <- exp(fitrw$par[burn.in:m, 2])
 quantile(mu, prob = c(.025, .975))
 
 # on (mu, log(sigma2)) cordinates
-mycontour(logpost, c(4.57, 4.67, log(.12),log(.22)), mag,
+mycontour(logpost, c(3.0, 4.0, log(0.2), log(0.7)), mag,
           xlab="mean", ylab="log(variance)",
-          cex.lab=2,cex.axis=1.5) 
+          cex.lab=2,cex.axis=1.5)
 points(mu, log(sigma2))
 
 # on (mu, sigma2) cordinates
-mycontour(normchi2post, c(4.57, 4.67, 0.12, 0.22),
+mycontour(normchi2post, c(3.0, 4.0, 0.2, 0.7),
 mag, xlab="mean", ylab="variance",
 cex.lab=2,cex.axis=1.5)
 points(mu, sigma2)
